@@ -66,7 +66,19 @@ class ChatViewModel {
             version: session.latestVersion
         )
 
-        let history = session.messages.map { (role: $0.role.rawValue, content: $0.content) }
+        let history: [(role: String, content: String)] = session.messages
+            .sorted { $0.createdAt < $1.createdAt }
+            .compactMap { msg in
+                switch msg.role {
+                case .system:
+                    return nil
+                case .user:
+                    return (role: "user", content: msg.content)
+                case .assistant:
+                    let parsed = ResponseParser.parse(msg.content)
+                    return (role: "assistant", content: parsed.chat)
+                }
+            }
         let requestMessages = PromptEngine.buildRequestMessages(
             systemPrompt: systemPrompt,
             history: history
