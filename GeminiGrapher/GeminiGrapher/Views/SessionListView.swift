@@ -82,16 +82,28 @@ struct SessionListView: View {
             .padding(12)
         }
         .onAppear { sessionListVM.loadSessions(context: modelContext) }
-        .alert("New Session", isPresented: $showNewSessionAlert) {
-            TextField("Session name", text: $newSessionName)
-            Button("Create") {
-                if !newSessionName.isEmpty {
-                    let session = sessionListVM.createSession(name: newSessionName, context: modelContext)
-                    chatVM.currentSession = session
-                    newSessionName = ""
+        .sheet(isPresented: $showNewSessionAlert) {
+            VStack(spacing: 16) {
+                Text("New Session").font(.headline)
+                TextField("Session name", text: $newSessionName)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 250)
+                    .onSubmit {
+                        createSessionIfValid()
+                    }
+                HStack(spacing: 12) {
+                    Button("Cancel") {
+                        newSessionName = ""
+                        showNewSessionAlert = false
+                    }
+                    Button("Create") {
+                        createSessionIfValid()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .disabled(newSessionName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
-            Button("Cancel", role: .cancel) { newSessionName = "" }
+            .padding(24)
         }
         .sheet(isPresented: $showMemoryEditor) {
             MemoryEditorView(
@@ -101,5 +113,14 @@ struct SessionListView: View {
                 sessionName: chatVM.currentSession?.name
             )
         }
+    }
+
+    private func createSessionIfValid() {
+        let name = newSessionName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        let session = sessionListVM.createSession(name: name, context: modelContext)
+        chatVM.currentSession = session
+        newSessionName = ""
+        showNewSessionAlert = false
     }
 }
