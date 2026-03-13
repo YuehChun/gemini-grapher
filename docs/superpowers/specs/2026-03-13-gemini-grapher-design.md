@@ -23,10 +23,33 @@ User ↔ macOS App (SwiftUI) ↔ VibeProxy (localhost:8317) ↔ Claude
 **LLMClient** — Async HTTP client calling vibeproxy's OpenAI-compatible API (`/v1/chat/completions`). Supports SSE streaming. Configurable base URL and model selection.
 
 **PromptEngine** — Builds the system prompt sent to Claude on each request. Injects:
-1. Base instruction (role as Gemini image prompt expert)
+1. Base instruction — tells Claude its role and the `---PROMPT---` delimiter contract (see System Prompt below)
 2. Global style preferences from memory
 3. Per-session feedback from memory
 4. Current prompt version (for Claude to modify incrementally)
+
+#### System Prompt Template
+
+```
+You are an expert at crafting prompts for Gemini image generation. The user will describe what they want in conversational fragments. Your job:
+
+1. Understand their intent and ask clarifying questions when needed.
+2. Synthesize all fragments into a single, complete, natural-language prompt optimized for Gemini image generation.
+3. When you produce or update a prompt, format your response as:
+   - Your conversational reply first
+   - Then the delimiter ---PROMPT--- on its own line
+   - Then the complete prompt (not a diff — always the full text)
+4. If you only need to ask a question or discuss (no prompt update), omit the delimiter entirely.
+
+## User's Style Preferences
+{preferences_content}
+
+## Session Feedback
+{feedback_content}
+
+## Current Prompt (version {version})
+{current_prompt_or_"None yet"}
+```
 
 **SessionManager** — SwiftData-backed project-based sessions. Each session has a name, conversation history, and prompt version history.
 
@@ -65,6 +88,7 @@ class Session {
     var name: String
     var createdAt: Date
     var updatedAt: Date
+    @Relationship(deleteRule: .cascade, inverse: \Message.session)
     var messages: [Message]
 }
 
@@ -76,6 +100,7 @@ class Message {
     var promptSnapshot: String?  // full prompt if this turn produced one
     var version: Int?            // prompt version number
     var createdAt: Date
+    var session: Session?
 }
 ```
 
@@ -87,9 +112,11 @@ class Message {
 │   ├── style.md          # long-term style preferences
 │   └── negative.md       # elements to avoid
 └── feedback/
-    ├── cyberpunk-characters.md   # per-session feedback
-    └── product-photography.md
+    ├── {session-uuid}.md   # per-session feedback, keyed by session ID
+    └── {session-uuid}.md
 ```
+
+Feedback files use session UUID as filename (not session name) to avoid issues with duplicate names, special characters, or renames. The first line of the file contains the human-readable session name as a heading.
 
 Markdown format:
 ```markdown
@@ -102,7 +129,7 @@ Markdown format:
 ```
 
 **Export**: zip the entire `memory/` folder, or open in Finder for direct editing.
-**Import**: drag in a `.zip` or select a folder to replace.
+**Import**: select a `.zip` or folder. Shows confirmation dialog before replacing existing memory. Validates folder structure (must contain `preferences/` and/or `feedback/` subdirectories); rejects invalid imports with an error message.
 
 ## LLM Interaction
 
@@ -135,7 +162,9 @@ Parsing rules:
 
 ### Streaming
 
-Responses stream via SSE. The chat bubble and prompt preview update in real-time as tokens arrive. The delimiter is detected during streaming to split content to the correct panel.
+Responses stream via SSE. The chat bubble and prompt preview update in real-time as tokens arrive.
+
+**Delimiter detection during streaming:** Accumulate streamed tokens into a buffer. Scan the buffer for `---PROMPT---` only on complete lines (after a newline character). Once detected, content before the delimiter goes to chat, content after goes to prompt preview. Before the delimiter is found, all content streams into the chat bubble. If the delimiter is detected mid-stream, the prompt panel begins updating from that point.
 
 ## Error Handling
 
@@ -168,4 +197,4 @@ Preferences window:
 - Delete session
 - Switch between sessions (preserves state)
 - Browse prompt version history within a session
-- Resume conversation from an older prompt version
+- Resume from older prompt version: injects a system note "Resuming from v{N}" and sets that version's prompt as the current prompt in PromptEngine. Chat history is preserved (no rewind or fork).
