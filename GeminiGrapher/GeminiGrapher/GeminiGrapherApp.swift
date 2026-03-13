@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct GeminiGrapherApp: App {
@@ -6,6 +7,7 @@ struct GeminiGrapherApp: App {
         WindowGroup {
             ContentView()
         }
+        .modelContainer(for: [Session.self, Message.self])
 
         Settings {
             SettingsView()
