@@ -21,26 +21,33 @@ struct ContentView: View {
                 chatVM: chatVM,
                 memoryStore: memoryStore
             )
-            .frame(minWidth: 200, idealWidth: 220)
+            .frame(minWidth: 200, idealWidth: 240)
         } content: {
             if chatVM.currentSession != nil {
                 ChatView(chatVM: chatVM, model: settingsVM.selectedModel)
+                    .frame(minWidth: 400)
             } else {
-                VStack(spacing: 12) {
-                    Image(systemName: "bubble.left.and.text.bubble.right")
-                        .font(.system(size: 48))
-                        .foregroundStyle(.secondary)
-                    Text("Select or create a session to begin")
-                        .foregroundStyle(.secondary)
-                }
+                emptyState
             }
         } detail: {
             PromptPreviewView(chatVM: chatVM)
-                .frame(minWidth: 250, idealWidth: 300)
+                .frame(minWidth: 280, idealWidth: 340)
         }
-        .frame(minWidth: 900, minHeight: 600)
+        .frame(minWidth: 960, minHeight: 640)
         .onAppear {
             chatVM.setModelContext(modelContext)
         }
+    }
+
+    private var emptyState: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "bubble.left.and.text.bubble.right")
+                .font(.system(size: 48))
+                .foregroundStyle(.quaternary)
+            Text("Select or create a session to begin")
+                .foregroundStyle(.tertiary)
+                .font(.title3)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }

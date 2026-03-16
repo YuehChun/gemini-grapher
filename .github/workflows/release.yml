@@ -1,0 +1,85 @@
+name: Build and Release DMG
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build-dmg:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "5.9"
+
+      - name: Build release binary
+        working-directory: GeminiGrapher
+        run: swift build -c release
+
+      - name: Run tests
+        working-directory: GeminiGrapher
+        run: swift test
+
+      - name: Create .app bundle
+        working-directory: GeminiGrapher
+        run: |
+          APP_DIR="GeminiGrapher.app/Contents"
+          mkdir -p "$APP_DIR/MacOS"
+          mkdir -p "$APP_DIR/Resources"
+          cp .build/release/GeminiGrapher "$APP_DIR/MacOS/"
+          cp AppIcon.icns "$APP_DIR/Resources/"
+          cat > "$APP_DIR/Info.plist" << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>GeminiGrapher</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.geminigrapher.app</string>
+              <key>CFBundleName</key>
+              <string>GeminiGrapher</string>
+              <key>CFBundleDisplayName</key>
+              <string>Gemini Grapher</string>
+              <key>CFBundleVersion</key>
+              <string>${{ github.event.release.tag_name }}</string>
+              <key>CFBundleShortVersionString</key>
+              <string>${{ github.event.release.tag_name }}</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleIconFile</key>
+              <string>AppIcon</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>14.0</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+          </dict>
+          </plist>
+          PLIST
+
+      - name: Create DMG
+        working-directory: GeminiGrapher
+        run: |
+          mkdir -p dmg-staging
+          cp -R GeminiGrapher.app dmg-staging/
+          ln -s /Applications dmg-staging/Applications
+          hdiutil create \
+            -volname "Gemini Grapher" \
+            -srcfolder dmg-staging \
+            -ov \
+            -format UDZO \
+            "GeminiGrapher-${{ github.event.release.tag_name }}.dmg"
+
+      - name: Upload DMG to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "${{ github.event.release.tag_name }}" \
+            "GeminiGrapher/GeminiGrapher-${{ github.event.release.tag_name }}.dmg" \
+            --clobber
