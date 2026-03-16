@@ -16,10 +16,6 @@
   <img src="https://img.shields.io/badge/swift-5.9-orange" alt="Swift">
 </p>
 
-<p align="center">
-  <img src="img/screenshot.png" alt="Screenshot" width="420">
-</p>
-
 ---
 
 ## What is Gemini Grapher?

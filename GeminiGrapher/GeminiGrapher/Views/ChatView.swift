@@ -4,7 +4,6 @@ import MarkdownUI
 struct ChatView: View {
     @Bindable var chatVM: ChatViewModel
     let model: String
-    @FocusState private var isInputFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
@@ -134,28 +133,24 @@ struct ChatView: View {
 
     private var inputArea: some View {
         HStack(alignment: .bottom, spacing: 12) {
-            TextField("Describe what you want to adjust...", text: $chatVM.inputText, axis: .vertical)
-                .font(.body)
-                .lineLimit(3...10)
-                .textFieldStyle(.plain)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
-                .frame(minHeight: 44)
-                .background(Color(.textBackgroundColor).opacity(0.5))
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .strokeBorder(
-                            isInputFocused ? Color.accentColor.opacity(0.5) : Color(.separatorColor).opacity(0.4),
-                            lineWidth: isInputFocused ? 1.5 : 0.5
-                        )
-                )
-                .focused($isInputFocused)
-                .onSubmit {
-                    if !NSEvent.modifierFlags.contains(.shift) {
-                        Task { await chatVM.send(model: model) }
-                    }
+            MultilineTextField(
+                text: $chatVM.inputText,
+                placeholder: "Describe what you want to adjust...",
+                font: .systemFont(ofSize: NSFont.systemFontSize),
+                onCommandReturn: {
+                    Task { await chatVM.send(model: model) }
                 }
+            )
+            .frame(minHeight: 44, maxHeight: 160)
+            .background(Color(.textBackgroundColor).opacity(0.5))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(
+                        Color(.separatorColor).opacity(0.4),
+                        lineWidth: 0.5
+                    )
+            )
 
             Button(action: {
                 Task { await chatVM.send(model: model) }
