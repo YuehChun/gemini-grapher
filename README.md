@@ -9,8 +9,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/futurepnp-hugot/gemini-grapher/releases/latest">
-    <img src="https://img.shields.io/github/v/release/futurepnp-hugot/gemini-grapher" alt="Release">
+  <a href="https://github.com/YuehChun/gemini-grapher/releases/latest">
+    <img src="https://img.shields.io/github/v/release/YuehChun/gemini-grapher" alt="Release">
   </a>
   <img src="https://img.shields.io/badge/platform-macOS%2014%2B-blue" alt="Platform">
   <img src="https://img.shields.io/badge/swift-5.9-orange" alt="Swift">
@@ -72,12 +72,12 @@ Gemini Grapher connects to LLMs through [vibeproxy](https://github.com/zhaolongz
 
 ### Download
 
-Download the latest `.dmg` from the [Releases](https://github.com/futurepnp-hugot/gemini-grapher/releases/latest) page.
+Download the latest `.dmg` from the [Releases](https://github.com/YuehChun/gemini-grapher/releases/latest) page.
 
 ### Build from source
 
 ```bash
-git clone https://github.com/futurepnp-hugot/gemini-grapher.git
+git clone https://github.com/YuehChun/gemini-grapher.git
 cd gemini-grapher/GeminiGrapher
 swift build -c release
 ```
