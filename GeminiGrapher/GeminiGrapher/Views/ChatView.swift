@@ -134,12 +134,13 @@ struct ChatView: View {
 
     private var inputArea: some View {
         HStack(alignment: .bottom, spacing: 12) {
-            TextEditor(text: $chatVM.inputText)
+            TextField("Describe what you want to adjust...", text: $chatVM.inputText, axis: .vertical)
                 .font(.body)
-                .scrollContentBackground(.hidden)
-                .padding(10)
-                .frame(minHeight: 60, maxHeight: 160)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(3...10)
+                .textFieldStyle(.plain)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .frame(minHeight: 44)
                 .background(Color(.textBackgroundColor).opacity(0.5))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
                 .overlay(
@@ -149,16 +150,12 @@ struct ChatView: View {
                             lineWidth: isInputFocused ? 1.5 : 0.5
                         )
                 )
-                .overlay(alignment: .topLeading) {
-                    if chatVM.inputText.isEmpty {
-                        Text("Describe what you want to adjust...")
-                            .foregroundStyle(.tertiary)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 18)
-                            .allowsHitTesting(false)
+                .focused($isInputFocused)
+                .onSubmit {
+                    if !NSEvent.modifierFlags.contains(.shift) {
+                        Task { await chatVM.send(model: model) }
                     }
                 }
-                .focused($isInputFocused)
 
             Button(action: {
                 Task { await chatVM.send(model: model) }
